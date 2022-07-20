@@ -4,6 +4,7 @@ const morgan = require('morgan')
 const app = express()
 // morgan('tiny')
 app.use(express.json())
+app.use(express.static('build'))
 app.use(morgan('tiny'))
 
 
