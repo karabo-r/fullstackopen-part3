@@ -7,7 +7,7 @@ app.use(express.json())
 app.use(morgan('tiny'))
 
 
-const message = 'hello mom'
+const message = '<h1>hello mom</h1>'
 const port = process.env.PORT || 3001
 
 let data = [
@@ -43,7 +43,7 @@ const information = `<h2>Phonebook has info for ${data.length} people
     </h2>`
 
 app.get('/', (req, res)=>{
-    res.send({name:'karabo'})
+    res.send(message)
 })
 
 app.get('/api/persons', (req,res)=>{
