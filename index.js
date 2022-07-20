@@ -43,7 +43,7 @@ const information = `<h2>Phonebook has info for ${data.length} people
     </h2>`
 
 app.get('/', (req, res)=>{
-    res.send(message)
+    res.send({name:'karabo'})
 })
 
 app.get('/api/persons', (req,res)=>{
