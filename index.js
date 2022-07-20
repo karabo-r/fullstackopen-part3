@@ -8,7 +8,7 @@ app.use(morgan('tiny'))
 
 
 const message = 'hello mom'
-const port = 3001
+const port = process.env.PORT || 3001
 
 let data = [
     { 
