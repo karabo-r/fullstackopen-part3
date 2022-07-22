@@ -1,95 +1,92 @@
-const express = require('express')
-const morgan = require('morgan')
+const dotenv = require("dotenv").config();
+const express = require("express");
+const morgan = require("morgan");
+const Person = require("./models/Person");
 
-const app = express()
-// morgan('tiny')
-app.use(express.json())
-app.use(express.static('build'))
-app.use(morgan('tiny'))
+const app = express();
+app.use(express.static("build"));
+app.use(express.json());
+app.use(morgan("tiny"));
 
 
-const message = '<h1>hello mom</h1>'
-const port = process.env.PORT || 3001
+const port = process.env.PORT || 3001;
 
-let data = [
-    { 
-      "id": 1,
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": 2,
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": 3,
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": 4,
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
+const unknownEndpoint = (request, response) => {
+	response.status(404).send({ error: "unknown endpoint" });
+};
 
-function generateId(reference){
-    return Math.floor( Math.random() * reference)
+function errorHandler(error, request, response, next) {
+	if (error) {
+		console.log(error);
+	}
+	if (error.name === "CastError") {
+		response.send({ error: "malformatted id" });
+	}
+	next();
 }
 
-const information = `<h2>Phonebook has info for ${data.length} people
-        <br/>
-        ${new Date()}
-    </h2>`
+app.get("/api/persons", (req, res) => {
+	Person.find({}).then((contact) => {
+		res.json(contact);
+	});
+});
 
-app.get('/', (req, res)=>{
-    res.send(message)
-})
+app.get("/api/persons/:id", (request, response, next) => {
+	Person.findById(request.params.id)
+		.then((contact) => {
+			if (contact) {
+				response.json(contact);
+			} else {
+				response.status(404).end();
+			}
+		})
+		.catch((error) => next(error));
+});
 
-app.get('/api/persons', (req,res)=>{
-    res.json(data)
-})
+app.delete("/api/persons/:id", (request, response, next) => {
+	Person.findByIdAndRemove(request.params.id)
+		.then(() => {
+			response.status(204).end();
+			console.log("contact has been deleted");
+		})
+		.catch((error) => next(error));
+});
 
-app.get('/api/persons/:id',(req,res)=>{
-    const id = Number(req.params.id)
-    const contact = data.find(item=>item.id === id)
-    if (contact) {
-        res.json(contact)
-    }else{
-        res.status(404).end()
-        console.log('contact not found');
-    }
-})
+app.post("/api/persons", (request, response) => {
+	const body = request.body;
+	const newContact = new Person({
+		name: body.name,
+		number: body.number,
+	});
+	newContact.save().then(console.log(newContact.name, "has been saved"));
+});
 
-app.delete('/api/persons/:id',(request,response)=>{
-    const id = Number(request.params.id)
-    data = data.filter(item=>item.id !== id)
-    response.status(204).end() 
-    console.log(data);
-})
-
-app.post('/api/persons',(request, response)=>{
-    const info = request.body
+app.put('/api/persons/:id', (request, response)=>{
+    const body = request.body
     const newContact = {
-        id: generateId(200),
-        name: info.name,
-        number: info.number
+        name: body.name,
+        number: body.number
     }
-    if (data.filter(item=>item.name.includes(newContact.name))) {
-    response.json({error: 'name is already added'})
-    }
-    if (newContact.name !== '' && newContact.number !== '') {
-        data.push(newContact)
-        response.json(data)
-    }
-    else{
-        response.json({error: 'add name and number'})
-    }
+    Person.findByIdAndUpdate(request.params.id, newContact,{new: true})
+    .then(updateContact=>{
+        response.json(updateContact)
+        console.log('Contact has been updated');
+    })
+    .catch(error=>next(error))
 })
+
 
 app.get('/info',(req,res)=>{
-    res.send(information)
+    Person.countDocuments()
+	.then(count=>{
+		res.send(`<p>Phonebook has info for ${count} people
+        <br/>
+        <br/>
+        ${new Date()}
+    </p>`)
+	})
 })
 
-app.listen(port, console.log('running on port', port))
+app.use(unknownEndpoint);
+app.use(errorHandler);
+app.listen(port, console.log("running on port", port));
