@@ -1,12 +1,11 @@
-const dotenv = require("dotenv").config();
 const express = require("express");
-const morgan = require("morgan");
+// const morgan = require("morgan");
 const Person = require("./models/Person");
 
 const app = express();
 app.use(express.static("build"));
 app.use(express.json());
-app.use(morgan("tiny"));
+// app.use(morgan("tiny"));
 
 const port = process.env.PORT || 3001;
 
