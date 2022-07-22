@@ -8,7 +8,6 @@ app.use(express.static("build"));
 app.use(express.json());
 app.use(morgan("tiny"));
 
-
 const port = process.env.PORT || 3001;
 
 const unknownEndpoint = (request, response) => {
@@ -21,6 +20,8 @@ function errorHandler(error, request, response, next) {
 	}
 	if (error.name === "CastError") {
 		response.send({ error: "malformatted id" });
+	} else if (error.name === "ValidationError") {
+		return response.status(400).json({ error: error.message });
 	}
 	next();
 }
@@ -52,40 +53,45 @@ app.delete("/api/persons/:id", (request, response, next) => {
 		.catch((error) => next(error));
 });
 
-app.post("/api/persons", (request, response) => {
+app.post("/api/persons", (request, response, next) => {
 	const body = request.body;
 	const newContact = new Person({
 		name: body.name,
 		number: body.number,
 	});
-	newContact.save().then(console.log(newContact.name, "has been saved"));
+
+	newContact
+		.save()
+		.then(console.log(newContact.name, "has been saved"))
+		.catch((error) => next(error));
 });
 
-app.put('/api/persons/:id', (request, response)=>{
-    const body = request.body
-    const newContact = {
-        name: body.name,
-        number: body.number
-    }
-    Person.findByIdAndUpdate(request.params.id, newContact,{new: true})
-    .then(updateContact=>{
-        response.json(updateContact)
-        console.log('Contact has been updated');
-    })
-    .catch(error=>next(error))
-})
+app.put("/api/persons/:id", (request, response, next) => {
+	const body = request.body;
+	const newContact = {
+		name: body.name,
+		number: body.number,
+	};
+	Person.findByIdAndUpdate(request.params.id, newContact, {
+		new: true,
+		runValidators: true,
+	})
+		.then((updateContact) => {
+			response.json(updateContact);
+			console.log("Contact has been updated");
+		})
+		.catch((error) => next(error));
+});
 
-
-app.get('/info',(req,res)=>{
-    Person.countDocuments()
-	.then(count=>{
+app.get("/info", (req, res) => {
+	Person.countDocuments().then((count) => {
 		res.send(`<p>Phonebook has info for ${count} people
         <br/>
         <br/>
         ${new Date()}
-    </p>`)
-	})
-})
+    </p>`);
+	});
+});
 
 app.use(unknownEndpoint);
 app.use(errorHandler);

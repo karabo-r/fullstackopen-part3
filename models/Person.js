@@ -1,12 +1,20 @@
-const dotenv = require('dotenv').config()
 const mongoose = require('mongoose')
-
+const {isMobilePhone} = require('validator')
 mongoose.connect(process.env.MONGO_URI).then(console.log('database connected'))
 
 const personSchema = new mongoose.Schema({
-    name: String,
-    number: String
-})
+    name: {
+      type: String,
+      minLength: [3, 'Name must be longer than 3 letters']
+    },
+    number: {
+      type: String,
+      minLength: 8,
+      validate: [isMobilePhone, 'Please enter a valid phone number' ]
+      }
+  })
+  
+
 
 personSchema.set('toJSON', {
     transform: (document, returnedObject) => {
